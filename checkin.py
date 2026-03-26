@@ -18,59 +18,50 @@ def run():
             page.goto(URL, timeout=60000)
             time.sleep(6)
 
-            # Flutter accessibility enable karo
-            acc_btn = page.locator("flt-semantics-placeholder[aria-label='Enable accessibility']")
-            if acc_btn.count() > 0:
-                print("Enabling Flutter accessibility...")
-                acc_btn.click()
-                time.sleep(3)
+            # Flutter accessibility enable - force click (element is hidden at -1,-1)
+            page.evaluate("""
+                const btn = document.querySelector("flt-semantics-placeholder");
+                if (btn) { btn.click(); console.log('accessibility clicked'); }
+            """)
+            print("Accessibility enabled via JS")
+            time.sleep(4)
+            page.screenshot(path="after_accessibility.png")
 
-            page.screenshot(path="after_load.png")
-
-            # Ab flt-text-editing-host mein inputs aayenge jab field click karein
-            # Flutter canvas pe Employee ID field ki position click karo
-            # Login form center mein hai - Employee ID field click
-            page.mouse.click(960, 258)  # Employee ID field position
+            # Ab page pe Tab key se focus karo aur type karo
+            # Ya directly canvas coordinates pe click karo
+            # Employee ID field - screenshot mein ~y=258 tha
+            page.mouse.click(512, 258)
             time.sleep(1)
+            page.keyboard.type(USERNAME)
+            print(f"Employee ID typed: {USERNAME}")
 
-            # Ab input DOM mein aayega
-            emp_input = page.locator("flt-text-editing-host input, flt-semantics input").first
-            emp_input.wait_for(state="attached", timeout=10000)
-            emp_input.fill(USERNAME)
-            print(f"Employee ID entered")
-
-            # Password field click
-            page.mouse.click(960, 292)
+            # Password field
+            page.mouse.click(512, 292)
             time.sleep(1)
-            pwd_input = page.locator("flt-text-editing-host input[type='password'], flt-semantics input[type='password']").first
-            pwd_input.wait_for(state="attached", timeout=10000)
-            pwd_input.fill(PASSWORD)
-            print("Password entered")
+            page.keyboard.type(PASSWORD)
+            print("Password typed")
 
             page.screenshot(path="before_login.png")
 
-            # Login button click - canvas pe position
-            page.mouse.click(960, 332)
+            # Login button ~y=332
+            page.mouse.click(512, 332)
             print("Login clicked")
             time.sleep(6)
             page.screenshot(path="after_login.png")
 
+            # Clock In/Out button
             if ACTION == "clockin":
-                # Clock In button dhundo
-                page.locator("flt-semantics[aria-label*='Clock In'], flt-semantics[role='button']").filter(has_text="Clock In").first.click()
+                # Dashboard pe Clock In button position
+                page.mouse.click(452, 108)
                 print("Clock In clicked!")
             elif ACTION == "clockout":
-                page.locator("flt-semantics[aria-label*='Clock Out'], flt-semantics[role='button']").filter(has_text="Clock Out").first.click()
+                page.mouse.click(452, 108)
                 print("Clock Out clicked!")
 
             time.sleep(3)
-            page.screenshot(path=f"{ACTION}_success.png")
-            print(f"{ACTION} successful!")
+            page.screenshot(path=f"{ACTION}_done.png")
+            print(f"{ACTION} done!")
 
-        except PlaywrightTimeout as e:
-            print(f"Timeout Error: {e}")
-            page.screenshot(path=f"{ACTION}_error.png")
-            sys.exit(1)
         except Exception as e:
             print(f"Error: {e}")
             page.screenshot(path=f"{ACTION}_error.png")
