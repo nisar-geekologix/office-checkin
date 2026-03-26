@@ -38,16 +38,13 @@ jobs:
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
-        working-directory: office-checkin
 
       - name: Decide action (clockin ya clockout)
-        id: set_action
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "ACTION=${{ github.event.inputs.action }}" >> $GITHUB_ENV
           else
             HOUR=$(date -u +"%H")
-            MINUTE=$(date -u +"%M")
             if [ "$HOUR" = "04" ]; then
               echo "ACTION=clockin" >> $GITHUB_ENV
             else
@@ -60,11 +57,10 @@ jobs:
           OFFICE_USERNAME: ${{ secrets.OFFICE_USERNAME }}
           OFFICE_PASSWORD: ${{ secrets.OFFICE_PASSWORD }}
         run: python checkin.py
-        working-directory: office-checkin
 
       - name: Upload screenshot
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: screenshot-${{ env.ACTION }}
-          path: office-checkin/*.png
+          name: screenshot
+          path: "*.png"
