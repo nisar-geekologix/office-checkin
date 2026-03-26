@@ -2,10 +2,8 @@ name: Office Clock In / Clock Out
 
 on:
   schedule:
-    # IST 9:40 AM  = UTC 4:10 AM  (Mon-Fri)
-    - cron: '10 4 * * 1-5'
-    # IST 7:10 PM  = UTC 13:40 PM (Mon-Fri)
-    - cron: '40 13 * * 1-5'
+    - cron: '10 4 * * 1-5'   # IST 9:40 AM (Mon-Fri)
+    - cron: '40 13 * * 1-5'  # IST 7:10 PM (Mon-Fri)
 
   workflow_dispatch:
     inputs:
@@ -21,29 +19,15 @@ on:
 jobs:
   attendance:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install Python dependencies
+      - name: Install dependencies
         run: pip install -r requirements.txt
-
-      - name: Install Playwright dependencies
-        run: |
-          sudo apt-get install -y \
-            libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 \
-            libcups2 libdrm2 libxkbcommon0 libxcomposite1 \
-            libxdamage1 libxfixes3 libxrandr2 libgbm1 \
-            libasound2t64
-
-      - name: Install Playwright browsers
-        run: python -m playwright install chromium
 
       - name: Decide action
         run: |
@@ -58,15 +42,8 @@ jobs:
             fi
           fi
 
-      - name: Run Attendance Script
+      - name: Run
         env:
           OFFICE_USERNAME: ${{ secrets.OFFICE_USERNAME }}
           OFFICE_PASSWORD: ${{ secrets.OFFICE_PASSWORD }}
         run: python checkin.py
-
-      - name: Upload screenshots
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: screenshots
-          path: "*.png"
