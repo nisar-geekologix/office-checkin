@@ -5,12 +5,10 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
 
 USERNAME = os.environ["OFFICE_USERNAME"]
 PASSWORD = os.environ["OFFICE_PASSWORD"]
-ACTION   = os.environ.get("ACTION", "clockin")   # "clockin" ya "clockout"
+ACTION   = os.environ.get("ACTION", "clockin")
 URL      = "https://taskyz.com/web/minified:u4"
 
 def run():
@@ -19,18 +17,17 @@ def run():
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--window-size=1920,1080")
+    options.binary_location = "/usr/bin/google-chrome"
 
-    driver = webdriver.Chrome(
-        service=Service(ChromeDriverManager().install()),
-        options=options
-    )
+    # System chromedriver use karo, webdriver-manager nahi
+    driver = webdriver.Chrome(options=options)
 
     try:
         print(f"Opening: {URL}")
         driver.get(URL)
         wait = WebDriverWait(driver, 20)
 
-        # Employee ID field
+        # Employee ID
         emp_field = wait.until(EC.presence_of_element_located((
             By.XPATH, "//input[@placeholder='Employee ID' or @type='text']"
         )))
@@ -38,17 +35,16 @@ def run():
         emp_field.send_keys(USERNAME)
         print("Employee ID entered")
 
-        # Password field
+        # Password
         pwd_field = driver.find_element(By.XPATH, "//input[@type='password']")
         pwd_field.clear()
         pwd_field.send_keys(PASSWORD)
         print("Password entered")
 
-        # Login button
+        # Login
         login_btn = driver.find_element(By.XPATH, "//button[contains(text(),'Login')]")
         login_btn.click()
-        print("Login clicked, waiting for dashboard...")
-
+        print("Login clicked, waiting...")
         time.sleep(4)
 
         if ACTION == "clockin":
