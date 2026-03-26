@@ -1,10 +1,7 @@
 import os
 import sys
 import time
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
 
 USERNAME = os.environ["OFFICE_USERNAME"]
 PASSWORD = os.environ["OFFICE_PASSWORD"]
@@ -12,67 +9,51 @@ ACTION   = os.environ.get("ACTION", "clockin")
 URL      = "https://taskyz.com/web/minified:u4"
 
 def run():
-    options = webdriver.ChromeOptions()
-    options.add_argument("--headless=new")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-    options.add_argument("--disable-gpu")
-    options.add_argument("--window-size=1920,1080")
-    # Chromium binary use karo (snap wala)
-    options.binary_location = "/snap/bin/chromium"
+    with sync_playwright() as p:
+        browser = p.chromium.launch(headless=True)
+        page = browser.new_page(viewport={"width": 1920, "height": 1080})
 
-    # Selenium 4.6+ mein selenium-manager auto driver dhundta hai
-    driver = webdriver.Chrome(options=options)
+        try:
+            print(f"Opening: {URL}")
+            page.goto(URL, wait_until="networkidle")
+            page.screenshot(path="after_load.png")
 
-    try:
-        print(f"Opening: {URL}")
-        driver.get(URL)
-        wait = WebDriverWait(driver, 20)
+            # Employee ID
+            page.fill("input[placeholder='Employee ID']", USERNAME)
+            print("Employee ID entered")
 
-        # Employee ID
-        emp_field = wait.until(EC.presence_of_element_located((
-            By.XPATH, "//input[@placeholder='Employee ID' or @type='text']"
-        )))
-        emp_field.clear()
-        emp_field.send_keys(USERNAME)
-        print("Employee ID entered")
+            # Password
+            page.fill("input[type='password']", PASSWORD)
+            print("Password entered")
 
-        # Password
-        pwd_field = driver.find_element(By.XPATH, "//input[@type='password']")
-        pwd_field.clear()
-        pwd_field.send_keys(PASSWORD)
-        print("Password entered")
+            # Login
+            page.click("button:has-text('Login')")
+            print("Login clicked, waiting...")
+            page.wait_for_load_state("networkidle")
+            time.sleep(3)
+            page.screenshot(path="after_login.png")
 
-        # Login
-        login_btn = driver.find_element(By.XPATH, "//button[contains(text(),'Login')]")
-        login_btn.click()
-        print("Login clicked, waiting...")
-        time.sleep(4)
+            if ACTION == "clockin":
+                page.click("button:has-text('Clock In')")
+                print("Clock In clicked!")
+            elif ACTION == "clockout":
+                page.click("button:has-text('Clock Out')")
+                print("Clock Out clicked!")
 
-        if ACTION == "clockin":
-            btn = wait.until(EC.element_to_be_clickable((
-                By.XPATH, "//button[contains(text(),'Clock In')]"
-            )))
-            btn.click()
-            print("Clock In successful!")
+            time.sleep(3)
+            page.screenshot(path=f"{ACTION}_success.png")
+            print(f"{ACTION} successful!")
 
-        elif ACTION == "clockout":
-            btn = wait.until(EC.element_to_be_clickable((
-                By.XPATH, "//button[contains(text(),'Clock Out')]"
-            )))
-            btn.click()
-            print("Clock Out successful!")
-
-        time.sleep(3)
-        driver.save_screenshot(f"{ACTION}_success.png")
-
-    except Exception as e:
-        print(f"Error: {e}")
-        driver.save_screenshot(f"{ACTION}_error.png")
-        sys.exit(1)
-
-    finally:
-        driver.quit()
+        except PlaywrightTimeout as e:
+            print(f"Timeout Error: {e}")
+            page.screenshot(path=f"{ACTION}_error.png")
+            sys.exit(1)
+        except Exception as e:
+            print(f"Error: {e}")
+            page.screenshot(path=f"{ACTION}_error.png")
+            sys.exit(1)
+        finally:
+            browser.close()
 
 if __name__ == "__main__":
     run()

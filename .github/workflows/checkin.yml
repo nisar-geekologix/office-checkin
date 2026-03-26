@@ -31,14 +31,11 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Chromium
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y chromium-browser
-          chromium-browser --version
-
       - name: Install Python dependencies
         run: pip install -r requirements.txt
+
+      - name: Install Playwright browsers
+        run: python -m playwright install chromium --with-deps
 
       - name: Decide action
         run: |
@@ -59,9 +56,9 @@ jobs:
           OFFICE_PASSWORD: ${{ secrets.OFFICE_PASSWORD }}
         run: python checkin.py
 
-      - name: Upload screenshot
+      - name: Upload screenshots
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: screenshot
+          name: screenshots
           path: "*.png"
