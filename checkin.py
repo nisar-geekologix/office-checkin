@@ -25,15 +25,22 @@ if login_data.get("status") != 1:
 token = login_data["data"]["token"]
 print(f"Login: {login_data['message']}")
 
-headers = {"Authorization": f"Bearer {token}"}
+headers = {
+    "Authorization": f"Bearer {token}",
+    "Origin": "https://taskyz.com",
+    "Referer": "https://taskyz.com/",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/146.0.0.0 Safari/537.36"
+}
 
-# Step 2: Organization ID fetch karo
+# Step 2: Organization fetch
 org_res = requests.get(f"{BASE}/organizations", headers=headers)
 org_data = org_res.json()
 org_id = org_data["data"][0]["id"]
-print(f"Org ID: {org_id}")
+user_role = org_data["data"][0]["user_role"]
+print(f"Org: {org_id}, Role: {user_role}")
 
-headers["organization-id"] = org_id
+headers["org-id"] = org_id
+headers["user-role"] = user_role
 
 # Step 3: Clock In ya Clock Out
 if ACTION == "clockin":
