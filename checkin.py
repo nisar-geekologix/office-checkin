@@ -17,18 +17,25 @@ login_res = requests.post(f"{BASE}/login", json={
     "device_id": "web-browser",
     "fcmToken": ""
 })
-
 login_data = login_res.json()
 if login_data.get("status") != 1:
     print(f"Login failed: {login_data}")
     sys.exit(1)
 
 token = login_data["data"]["token"]
-print(f"Login successful: {login_data['message']}")
+print(f"Login: {login_data['message']}")
 
 headers = {"Authorization": f"Bearer {token}"}
 
-# Step 2: Clock In ya Clock Out
+# Step 2: Organization ID fetch karo
+org_res = requests.get(f"{BASE}/organizations", headers=headers)
+org_data = org_res.json()
+org_id = org_data["data"][0]["id"]
+print(f"Org ID: {org_id}")
+
+headers["organization-id"] = org_id
+
+# Step 3: Clock In ya Clock Out
 if ACTION == "clockin":
     res = requests.get(f"{BASE}/checkin", headers=headers)
 elif ACTION == "clockout":
