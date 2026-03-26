@@ -2,8 +2,8 @@ name: Office Clock In / Clock Out
 
 on:
   schedule:
-    - cron: '10 4 * * 1-5'   # IST 9:40 AM (Mon-Fri)
-    - cron: '9 13 * * 1-5'   # IST 6:39 PM (Mon-Fri) - TEST
+    - cron: '55 3 * * 1-5'   # IST 9:25 AM → actual ~9:35-9:40 AM (Mon-Fri)
+    - cron: '25 13 * * 1-5'  # IST 6:55 PM → actual ~7:05-7:10 PM (Mon-Fri)
 
   workflow_dispatch:
     inputs:
