@@ -1,12 +1,63 @@
 import os
 import sys
 import time
-from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
+from playwright.sync_api import sync_playwright
 
 USERNAME = os.environ["OFFICE_USERNAME"]
 PASSWORD = os.environ["OFFICE_PASSWORD"]
 ACTION   = os.environ.get("ACTION", "clockin")
 URL      = "https://taskyz.com/web/minified:u4"
+
+def wait_and_print_dom(page, label):
+    time.sleep(2)
+    page.screenshot(path=f"{label}.png")
+    # flt-semantics elements print karo
+    elements = page.evaluate("""
+        () => {
+            const els = document.querySelectorAll('flt-semantics[role="button"], flt-semantics[role="textbox"]');
+            return Array.from(els).map(e => ({
+                role: e.getAttribute('role'),
+                label: e.getAttribute('aria-label'),
+                text: e.textContent.trim().substring(0, 50)
+            }));
+        }
+    """)
+    print(f"[{label}] flt-semantics elements:", elements)
+    return elements
+
+def click_flutter_button(page, label_text):
+    result = page.evaluate(f"""
+        () => {{
+            const els = document.querySelectorAll('flt-semantics');
+            for (const el of els) {{
+                const label = el.getAttribute('aria-label') || el.textContent || '';
+                if (label.toLowerCase().includes('{label_text.lower()}')) {{
+                    el.click();
+                    return 'clicked: ' + label;
+                }}
+            }}
+            return 'not found: {label_text}';
+        }}
+    """)
+    print(f"Button click result: {result}")
+    return result
+
+def type_in_flutter_input(page, index, text):
+    # Flutter input fields ko focus karke type karo
+    result = page.evaluate(f"""
+        () => {{
+            const inputs = document.querySelectorAll('flt-semantics[role="textbox"]');
+            if (inputs[{index}]) {{
+                inputs[{index}].focus();
+                inputs[{index}].click();
+                return 'focused input ' + {index};
+            }}
+            return 'input {index} not found, total: ' + inputs.length;
+        }}
+    """)
+    print(f"Input focus result: {result}")
+    time.sleep(0.5)
+    page.keyboard.type(text)
 
 def run():
     with sync_playwright() as p:
@@ -18,49 +69,45 @@ def run():
             page.goto(URL, timeout=60000)
             time.sleep(6)
 
-            # Flutter accessibility enable - force click (element is hidden at -1,-1)
+            # Accessibility enable
             page.evaluate("""
-                const btn = document.querySelector("flt-semantics-placeholder");
-                if (btn) { btn.click(); console.log('accessibility clicked'); }
+                const btn = document.querySelector('flt-semantics-placeholder');
+                if (btn) btn.click();
             """)
-            print("Accessibility enabled via JS")
             time.sleep(4)
-            page.screenshot(path="after_accessibility.png")
 
-            # Ab page pe Tab key se focus karo aur type karo
-            # Ya directly canvas coordinates pe click karo
-            # Employee ID field - screenshot mein ~y=258 tha
-            page.mouse.click(512, 258)
-            time.sleep(1)
-            page.keyboard.type(USERNAME)
-            print(f"Employee ID typed: {USERNAME}")
+            els = wait_and_print_dom(page, "after_accessibility")
 
-            # Password field
-            page.mouse.click(512, 292)
-            time.sleep(1)
-            page.keyboard.type(PASSWORD)
-            print("Password typed")
+            # Employee ID input
+            type_in_flutter_input(page, 0, USERNAME)
+            print(f"Employee ID typed")
+            time.sleep(0.5)
+
+            # Password input
+            type_in_flutter_input(page, 1, PASSWORD)
+            print(f"Password typed")
+            time.sleep(0.5)
 
             page.screenshot(path="before_login.png")
 
-            # Login button ~y=332
-            page.mouse.click(512, 332)
-            print("Login clicked")
+            # Login button click
+            result = click_flutter_button(page, "login")
+            print(f"Login: {result}")
             time.sleep(6)
-            page.screenshot(path="after_login.png")
 
-            # Clock In/Out button
+            wait_and_print_dom(page, "after_login")
+
+            # Clock In / Clock Out
             if ACTION == "clockin":
-                # Dashboard pe Clock In button position
-                page.mouse.click(452, 108)
-                print("Clock In clicked!")
+                result = click_flutter_button(page, "clock in")
+                print(f"Clock In: {result}")
             elif ACTION == "clockout":
-                page.mouse.click(452, 108)
-                print("Clock Out clicked!")
+                result = click_flutter_button(page, "clock out")
+                print(f"Clock Out: {result}")
 
             time.sleep(3)
-            page.screenshot(path=f"{ACTION}_done.png")
-            print(f"{ACTION} done!")
+            page.screenshot(path=f"{ACTION}_final.png")
+            print("Done!")
 
         except Exception as e:
             print(f"Error: {e}")
