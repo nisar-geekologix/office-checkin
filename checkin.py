@@ -15,29 +15,39 @@ def run():
 
         try:
             print(f"Opening: {URL}")
-            page.goto(URL, wait_until="networkidle")
+            page.goto(URL, timeout=60000)
+            time.sleep(3)  # JS render hone do
             page.screenshot(path="after_load.png")
 
-            # Employee ID
-            page.fill("input[placeholder='Employee ID']", USERNAME)
-            print("Employee ID entered")
+            # Employee ID - placeholder text se dhundo
+            emp = page.locator("input").nth(0)
+            emp.wait_for(state="visible", timeout=15000)
+            emp.click()
+            emp.fill(USERNAME)
+            print(f"Employee ID entered: {USERNAME}")
 
-            # Password
-            page.fill("input[type='password']", PASSWORD)
+            # Password - second input
+            pwd = page.locator("input").nth(1)
+            pwd.click()
+            pwd.fill(PASSWORD)
             print("Password entered")
 
-            # Login
-            page.click("button:has-text('Login')")
+            page.screenshot(path="before_login.png")
+
+            # Login button
+            page.locator("button", has_text="Login").click()
             print("Login clicked, waiting...")
-            page.wait_for_load_state("networkidle")
-            time.sleep(3)
+            time.sleep(5)
             page.screenshot(path="after_login.png")
 
             if ACTION == "clockin":
-                page.click("button:has-text('Clock In')")
+                page.locator("button", has_text="Clock In").wait_for(state="visible", timeout=15000)
+                page.locator("button", has_text="Clock In").click()
                 print("Clock In clicked!")
+
             elif ACTION == "clockout":
-                page.click("button:has-text('Clock Out')")
+                page.locator("button", has_text="Clock Out").wait_for(state="visible", timeout=15000)
+                page.locator("button", has_text="Clock Out").click()
                 print("Clock Out clicked!")
 
             time.sleep(3)
