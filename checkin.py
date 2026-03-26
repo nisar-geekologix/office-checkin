@@ -16,50 +16,51 @@ def run():
         try:
             print(f"Opening: {URL}")
             page.goto(URL, timeout=60000)
+            time.sleep(6)
 
-            # Flutter app ko fully load hone do
-            print("Waiting for Flutter to render...")
-            time.sleep(8)
+            # Flutter accessibility enable karo
+            acc_btn = page.locator("flt-semantics-placeholder[aria-label='Enable accessibility']")
+            if acc_btn.count() > 0:
+                print("Enabling Flutter accessibility...")
+                acc_btn.click()
+                time.sleep(3)
+
             page.screenshot(path="after_load.png")
 
-            # Flutter renders everything in a <canvas> or flt-* elements
-            # Check what's actually in the DOM
-            body_html = page.inner_html("body")
-            print("Body snippet:", body_html[:2000])
+            # Ab flt-text-editing-host mein inputs aayenge jab field click karein
+            # Flutter canvas pe Employee ID field ki position click karo
+            # Login form center mein hai - Employee ID field click
+            page.mouse.click(960, 258)  # Employee ID field position
+            time.sleep(1)
 
-            # Flutter web uses flt-semantics for accessibility
-            # Wait for flutter semantic elements
-            page.wait_for_selector("flt-semantics-container", timeout=20000)
-            print("Flutter rendered!")
-            page.screenshot(path="flutter_loaded.png")
+            # Ab input DOM mein aayega
+            emp_input = page.locator("flt-text-editing-host input, flt-semantics input").first
+            emp_input.wait_for(state="attached", timeout=10000)
+            emp_input.fill(USERNAME)
+            print(f"Employee ID entered")
 
-            # Flutter inputs are inside flt-semantics
-            inputs = page.locator("input")
-            print(f"Input count: {inputs.count()}")
-
-            # Fill first input (Employee ID)
-            inputs.nth(0).click()
-            inputs.nth(0).fill(USERNAME)
-            print("Employee ID entered")
-
-            # Fill second input (Password)
-            inputs.nth(1).click()
-            inputs.nth(1).fill(PASSWORD)
+            # Password field click
+            page.mouse.click(960, 292)
+            time.sleep(1)
+            pwd_input = page.locator("flt-text-editing-host input[type='password'], flt-semantics input[type='password']").first
+            pwd_input.wait_for(state="attached", timeout=10000)
+            pwd_input.fill(PASSWORD)
             print("Password entered")
 
             page.screenshot(path="before_login.png")
 
-            # Click Login - Flutter button
-            page.locator("flt-semantics[role='button']", has_text="Login").click()
+            # Login button click - canvas pe position
+            page.mouse.click(960, 332)
             print("Login clicked")
-            time.sleep(5)
+            time.sleep(6)
             page.screenshot(path="after_login.png")
 
             if ACTION == "clockin":
-                page.locator("flt-semantics[role='button']", has_text="Clock In").click()
+                # Clock In button dhundo
+                page.locator("flt-semantics[aria-label*='Clock In'], flt-semantics[role='button']").filter(has_text="Clock In").first.click()
                 print("Clock In clicked!")
             elif ACTION == "clockout":
-                page.locator("flt-semantics[role='button']", has_text="Clock Out").click()
+                page.locator("flt-semantics[aria-label*='Clock Out'], flt-semantics[role='button']").filter(has_text="Clock Out").first.click()
                 print("Clock Out clicked!")
 
             time.sleep(3)
