@@ -31,17 +31,16 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Chrome and Chromedriver
+      - name: Install Chromium
         run: |
           sudo apt-get update
-          sudo apt-get install -y google-chrome-stable chromium-chromedriver
-          chromedriver --version
-          google-chrome --version
+          sudo apt-get install -y chromium-browser
+          chromium-browser --version
 
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
-      - name: Decide action (clockin ya clockout)
+      - name: Decide action
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "ACTION=${{ github.event.inputs.action }}" >> $GITHUB_ENV

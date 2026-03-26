@@ -1,26 +1,15 @@
 import os
 import sys
 import time
-import subprocess
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service
 
 USERNAME = os.environ["OFFICE_USERNAME"]
 PASSWORD = os.environ["OFFICE_PASSWORD"]
 ACTION   = os.environ.get("ACTION", "clockin")
 URL      = "https://taskyz.com/web/minified:u4"
-
-def get_chromedriver_path():
-    # chromedriver jo system mein installed hai uska path dhundo
-    result = subprocess.run(["which", "chromedriver"], capture_output=True, text=True)
-    path = result.stdout.strip()
-    if path:
-        print(f"Found chromedriver at: {path}")
-        return path
-    return "/usr/bin/chromedriver"
 
 def run():
     options = webdriver.ChromeOptions()
@@ -29,9 +18,11 @@ def run():
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
+    # Chromium binary use karo (snap wala)
+    options.binary_location = "/snap/bin/chromium"
 
-    service = Service(executable_path=get_chromedriver_path())
-    driver = webdriver.Chrome(service=service, options=options)
+    # Selenium 4.6+ mein selenium-manager auto driver dhundta hai
+    driver = webdriver.Chrome(options=options)
 
     try:
         print(f"Opening: {URL}")
