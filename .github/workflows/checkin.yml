@@ -1,0 +1,70 @@
+name: Office Clock In / Clock Out
+
+on:
+  schedule:
+    # IST 9:40 AM  = UTC 4:10 AM  (Mon-Fri)
+    - cron: '10 4 * * 1-5'
+    # IST 7:10 PM  = UTC 13:40 PM (Mon-Fri)
+    - cron: '40 13 * * 1-5'
+
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'clockin ya clockout'
+        required: true
+        default: 'clockin'
+        type: choice
+        options:
+          - clockin
+          - clockout
+
+jobs:
+  attendance:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Chrome
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y google-chrome-stable
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+        working-directory: office-checkin
+
+      - name: Decide action (clockin ya clockout)
+        id: set_action
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "ACTION=${{ github.event.inputs.action }}" >> $GITHUB_ENV
+          else
+            HOUR=$(date -u +"%H")
+            MINUTE=$(date -u +"%M")
+            if [ "$HOUR" = "04" ]; then
+              echo "ACTION=clockin" >> $GITHUB_ENV
+            else
+              echo "ACTION=clockout" >> $GITHUB_ENV
+            fi
+          fi
+
+      - name: Run Attendance Script
+        env:
+          OFFICE_USERNAME: ${{ secrets.OFFICE_USERNAME }}
+          OFFICE_PASSWORD: ${{ secrets.OFFICE_PASSWORD }}
+        run: python checkin.py
+        working-directory: office-checkin
+
+      - name: Upload screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshot-${{ env.ACTION }}
+          path: office-checkin/*.png
